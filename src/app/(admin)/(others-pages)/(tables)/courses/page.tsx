@@ -3,9 +3,9 @@ import CoursesTable from "@/components/tables/CoursesTable";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Next.js Basic Table | TailAdmin - Next.js Dashboard Template",
+  title: "Courses | TailAdmin - Next.js Dashboard Template",
   description:
-    "This is Next.js Basic Table  page for TailAdmin  Tailwind CSS Admin Dashboard Template",
+    "This is Courses page for TailAdmin  Tailwind CSS Admin Dashboard Template",
   // other metadata
 };
 
