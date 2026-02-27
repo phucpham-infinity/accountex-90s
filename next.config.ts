@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**",
       },
+       {
+        protocol: "https",
+        hostname: "s3.90snhanketoanthue.com",
+        port: "",
+        pathname: "/**",
+      },
       {
         protocol: "http",
         hostname: "s3.ihomelap.io.vn",
