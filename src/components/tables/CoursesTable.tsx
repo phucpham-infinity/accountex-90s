@@ -1,12 +1,13 @@
 "use client";
 
 import CreateCourseModal from "../courses/CreateCourseModal";
+import EditCourseModal from "../courses/EditCourseModal";
+import DeleteCourseModal from "../courses/DeleteCourseModal";
 
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import Image from "next/image";
@@ -21,168 +22,65 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-
-interface Order {
-  id: number;
-  user: {
-    image: string;
-    name: string;
-    role: string;
-  };
-  projectName: string;
-  team: {
-    images: string[];
-  };
-  status: string;
-  budget: string;
-}
-
-const tableData: Order[] = [
-  {
-    id: 1,
-    user: {
-      image: "/images/user/user-17.jpg",
-      name: "Lindsey Curtis",
-      role: "Web Designer",
-    },
-    projectName: "Agency Website",
-    team: {
-      images: [
-        "/images/user/user-22.jpg",
-        "/images/user/user-23.jpg",
-        "/images/user/user-24.jpg",
-      ],
-    },
-    budget: "3.9K",
-    status: "Active",
-  },
-  {
-    id: 2,
-    user: {
-      image: "/images/user/user-18.jpg",
-      name: "Kaiya George",
-      role: "Project Manager",
-    },
-    projectName: "Technology",
-    team: {
-      images: ["/images/user/user-25.jpg", "/images/user/user-26.jpg"],
-    },
-    budget: "24.9K",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    user: {
-      image: "/images/user/user-17.jpg",
-      name: "Zain Geidt",
-      role: "Content Writing",
-    },
-    projectName: "Blog Writing",
-    team: {
-      images: ["/images/user/user-27.jpg"],
-    },
-    budget: "12.7K",
-    status: "Active",
-  },
-  {
-    id: 4,
-    user: {
-      image: "/images/user/user-20.jpg",
-      name: "Abram Schleifer",
-      role: "Digital Marketer",
-    },
-    projectName: "Social Media",
-    team: {
-      images: [
-        "/images/user/user-28.jpg",
-        "/images/user/user-29.jpg",
-        "/images/user/user-30.jpg",
-      ],
-    },
-    budget: "2.8K",
-    status: "Cancel",
-  },
-  {
-    id: 5,
-    user: {
-      image: "/images/user/user-21.jpg",
-      name: "Carla George",
-      role: "Front-end Developer",
-    },
-    projectName: "Website",
-    team: {
-      images: [
-        "/images/user/user-31.jpg",
-        "/images/user/user-32.jpg",
-        "/images/user/user-33.jpg",
-      ],
-    },
-    budget: "4.5K",
-    status: "Active",
-  },
-];
+import { useCourses, Course } from "@/hooks/useCourses";
+import { useEffect } from "react";
 
 export default function CoursesTable() {
   const [globalFilter, setGlobalFilter] = useState("");
+  // Simple debounce state for filter
+  const [debouncedFilter, setDebouncedFilter] = useState("");
 
-  const columns = useMemo<ColumnDef<Order>[]>(
+  // Simple debounce effect
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedFilter(globalFilter);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [globalFilter]);
+
+  const { data, isLoading, isError } = useCourses(1, 10, debouncedFilter);
+
+  const coursesData = data?.courses || [];
+
+  const columns = useMemo<ColumnDef<Course>[]>(
     () => [
       {
-        id: "user",
-        header: "User",
-        accessorFn: (row) => row.user.name,
+        id: "title",
+        header: "Course",
+        accessorFn: (row) => row.title,
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 overflow-hidden rounded-full">
-              <Image
-                width={40}
-                height={40}
-                src={row.original.user.image}
-                alt={row.original.user.name}
-              />
+            <div className="h-10 w-16 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800">
+              {row.original.image ? (
+                <Image
+                  width={64}
+                  height={40}
+                  src={row.original.image}
+                  alt={row.original.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-xs text-brand-500">
+                  No Img
+                </div>
+              )}
             </div>
             <div>
               <span className="text-theme-sm block font-medium text-gray-800 dark:text-white/90">
-                {row.original.user.name}
-              </span>
-              <span className="text-theme-xs block text-gray-500 dark:text-gray-400">
-                {row.original.user.role}
+                {row.original.title}
               </span>
             </div>
           </div>
         ),
       },
       {
-        id: "projectName",
-        header: "Project Name",
-        accessorKey: "projectName",
+        id: "price",
+        header: "Price",
+        accessorKey: "price",
         cell: ({ getValue }) => (
           <span className="text-theme-sm text-gray-500 dark:text-gray-400">
-            {getValue<string>()}
+            ${Number(getValue<number>()).toLocaleString()}
           </span>
-        ),
-      },
-      {
-        id: "team",
-        header: "Team",
-        accessorFn: (row) => row.team.images.length,
-        cell: ({ row }) => (
-          <div className="flex -space-x-2">
-            {row.original.team.images.map((teamImage, index) => (
-              <div
-                key={index}
-                className="h-6 w-6 overflow-hidden rounded-full border-2 border-white dark:border-gray-900"
-              >
-                <Image
-                  width={24}
-                  height={24}
-                  src={teamImage}
-                  alt={`Team member ${index + 1}`}
-                  className="w-full"
-                />
-              </div>
-            ))}
-          </div>
         ),
       },
       {
@@ -195,26 +93,26 @@ export default function CoursesTable() {
             <Badge
               size="sm"
               color={
-                status === "Active"
+                status === "published"
                   ? "success"
-                  : status === "Pending"
+                  : status === "draft"
                     ? "warning"
-                    : "error"
+                    : "error" // archived
               }
             >
-              {status}
+              {status.charAt(0).toUpperCase() + status.slice(1)}
             </Badge>
           );
         },
       },
       {
-        id: "budget",
-        header: "Budget",
-        accessorKey: "budget",
-        cell: ({ getValue }) => (
-          <span className="text-theme-sm text-gray-500 dark:text-gray-400">
-            {getValue<string>()}
-          </span>
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <EditCourseModal course={row.original} />
+            <DeleteCourseModal course={row.original} />
+          </div>
         ),
       },
     ],
@@ -222,19 +120,10 @@ export default function CoursesTable() {
   );
 
   const table = useReactTable({
-    data: tableData,
+    data: coursesData,
     columns,
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
+    state: {},
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const search = filterValue.toLowerCase();
-      return (
-        row.original.user.name.toLowerCase().includes(search) ||
-        row.original.projectName.toLowerCase().includes(search)
-      );
-    },
   });
 
   return (
@@ -242,7 +131,7 @@ export default function CoursesTable() {
       {/* Card Header */}
       <div className="flex items-center justify-between px-5 py-4">
         <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-          Recent Orders
+          Courses
         </h3>
         <div className="flex items-center gap-3">
           {/* Search Input */}
@@ -273,35 +162,11 @@ export default function CoursesTable() {
               type="text"
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
-              placeholder="Search..."
+              placeholder="Search courses..."
               className="focus:border-brand-500 h-10 w-64 rounded-lg border border-gray-200 bg-white pr-4 pl-9 text-sm text-gray-700 placeholder-gray-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500"
             />
           </div>
 
-          {/* Filter Button */}
-          <Button
-            size="sm"
-            variant="outline"
-            startIcon={
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M3 4.5H15M5.25 9H12.75M7.5 13.5H10.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            }
-          >
-            Filter
-          </Button>
           <CreateCourseModal />
         </div>
       </div>
@@ -332,21 +197,41 @@ export default function CoursesTable() {
 
             {/* Table Body */}
             <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
-              {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="px-5 py-4 text-start sm:px-6"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
+              {isLoading ? (
+                <TableRow>
+                  <td colSpan={columns.length} className="px-5 py-8 text-center text-gray-500">
+                    Loading courses...
+                  </td>
                 </TableRow>
-              ))}
+              ) : isError ? (
+                <TableRow>
+                  <td colSpan={columns.length} className="px-5 py-8 text-center text-error-500">
+                    Failed to fetch courses.
+                  </td>
+                </TableRow>
+              ) : coursesData.length === 0 ? (
+                <TableRow>
+                  <td colSpan={columns.length} className="px-5 py-8 text-center text-gray-500">
+                    No courses found.
+                  </td>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="px-5 py-4 text-start sm:px-6"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

@@ -1,233 +1,37 @@
 "use client";
 
-import { useState } from "react";
-import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
-import Input from "@/components/form/input/InputField";
-import Label from "@/components/form/Label";
 import { useModal } from "@/hooks/useModal";
-import { useForm } from "@tanstack/react-form";
 import { useCreateCourse } from "@/hooks/useCreateCourse";
-import { useUploadImage } from "@/hooks/useUploadImage";
-import { IMaskInput } from "react-imask";
-import dynamic from "next/dynamic";
-import "react-quill-new/dist/quill.snow.css";
-
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import CourseFormModal from "./CourseFormModal";
 
 export default function CreateCourseModal() {
   const { isOpen, openModal, closeModal } = useModal();
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const mutation = useCreateCourse(() => {
-    handleCloseModal();
-  });
-
-  const uploadImageMutation = useUploadImage();
-
-  const form = useForm({
-    defaultValues: {
-      title: "",
-      description: "",
-      price: 0,
-      status: "draft" as "draft" | "published" | "archived",
-      image: "",
-    },
-    onSubmit: async ({ value }) => {
-      if (imageFile) {
-        uploadImageMutation.mutate(imageFile, {
-          onSuccess: (url) => {
-            mutation.mutate({ ...value, image: url });
-          },
-        });
-      } else {
-        mutation.mutate(value);
-      }
-    },
-  });
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    form.handleSubmit();
-  };
-
-  const handleCloseModal = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    form.reset();
     closeModal();
-  };
+  });
 
   return (
     <>
       <Button size="sm" onClick={openModal}>Add Course</Button>
 
-      <Modal isOpen={isOpen} onClose={handleCloseModal} className="max-w-xl p-6">
-        <div className="mb-5">
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white/90">
-            Create New Course
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Fill in the details below to create a new course.
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleFormSubmit}
-          className="space-y-4"
-        >
-          <form.Field
-            name="title"
-            children={(field) => (
-              <div>
-                <Label>Course Title</Label>
-                <Input
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Enter course title"
-                  required
-                />
-              </div>
-            )}
-          />
-
-          <form.Field
-            name="description"
-            children={(field) => (
-              <div>
-                <Label>Description</Label>
-                <div className="rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden shadow-theme-xs">
-                  <ReactQuill
-                    theme="snow"
-                    value={field.state.value}
-                    onChange={(content) => field.handleChange(content)}
-                    placeholder="Enter course description"
-                    className="bg-white dark:bg-gray-900 dark:text-white/90 [&_.ql-toolbar]:dark:border-gray-700 [&_.ql-container]:dark:border-gray-700 [&_.ql-editor]:min-h-[120px]"
-                  />
-                </div>
-              </div>
-            )}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <form.Field
-              name="price"
-              children={(field) => (
-                <div>
-                  <Label>Price</Label>
-                  <IMaskInput
-                    mask={Number}
-                    scale={0}
-                    thousandsSeparator=","
-                    padFractionalZeros={false}
-                    normalizeZeros={true}
-                    unmask={true}
-                    name={field.name}
-                    value={String(field.state.value || "")}
-                    onBlur={field.handleBlur}
-                    onAccept={(value, mask) => {
-                      field.handleChange(Number(mask.unmaskedValue) || 0);
-                    }}
-                    placeholder="Enter price"
-                    required
-                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800"
-                  />
-                </div>
-              )}
-            />
-
-            <form.Field
-              name="status"
-              children={(field) => (
-                <div>
-                  <Label>Status</Label>
-                  <select
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value as "draft" | "published" | "archived",
-                      )
-                    }
-                    className="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm focus:ring-3 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-              )}
-            />
-          </div>
-
-          <form.Field
-            name="image"
-            children={(field) => (
-              <div>
-                <Label>Image (optional)</Label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setImageFile(file);
-                      setImagePreview(URL.createObjectURL(file));
-                    } else {
-                      setImageFile(null);
-                      setImagePreview(null);
-                    }
-                  }}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-gray-800 dark:file:text-gray-300"
-                />
-                {(uploadImageMutation.isPending || mutation.isPending) && imageFile && (
-                  <p className="mt-2 text-sm text-brand-500">
-                    {uploadImageMutation.isPending
-                      ? "Uploading image..."
-                      : "Creating course..."}
-                  </p>
-                )}
-                {imagePreview && (
-                  <div className="mt-3">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="h-24 w-36 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          />
-
-          <div className="mt-6 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                handleCloseModal();
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-3.5 text-sm font-medium text-gray-700 ring-1 ring-gray-300 transition ring-inset hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending || uploadImageMutation.isPending}
-              className={`bg-brand-500 shadow-theme-xs hover:bg-brand-600 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3.5 text-sm font-medium text-white transition ${(mutation.isPending || uploadImageMutation.isPending) ? "cursor-not-allowed opacity-50" : ""}`}
-            >
-              {mutation.isPending ? "Creating..." : "Create Course"}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <CourseFormModal
+        isOpen={isOpen}
+        onClose={closeModal}
+        title="Create New Course"
+        descriptionText="Fill in the details below to create a new course."
+        defaultValues={{
+          title: "",
+          description: "",
+          price: 0,
+          status: "draft",
+          image: "",
+        }}
+        onSubmit={(values) => mutation.mutate(values)}
+        isPending={mutation.isPending}
+        submitLabel="Create Course"
+      />
     </>
   );
 }

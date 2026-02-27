@@ -16,6 +16,18 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "s3.ihomelap.io.vn",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "s3.ihomelap.io.vn",
+        port: "",
+        pathname: "/**",
+      },
     ],
   },
   webpack(config) {

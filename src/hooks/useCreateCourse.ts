@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import axiosInstance from "@/lib/axios";
 
@@ -11,6 +11,8 @@ export interface CourseFormData {
 }
 
 export const useCreateCourse = (onSuccessCallback?: () => void) => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (newCourse: CourseFormData) => {
       try {
@@ -25,10 +27,7 @@ export const useCreateCourse = (onSuccessCallback?: () => void) => {
       if (onSuccessCallback) {
         onSuccessCallback();
       }
-      // Reload the page to show the newly created course, or invalidate query if it existed
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
     },
     onError: (error) => {
       console.error(error);
