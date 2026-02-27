@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import axiosInstance from "@/lib/axios";
 
 export function useLogin(onError?: (error: any) => void) {
   const router = useRouter();
@@ -8,17 +9,12 @@ export function useLogin(onError?: (error: any) => void) {
 
   return useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.message || "Login failed");
+      try {
+        const res = await axiosInstance.post("/api/auth/login", credentials);
+        return res.data;
+      } catch (error: any) {
+        throw new Error(error.response?.data?.message || "Login failed");
       }
-      return data;
     },
     onSuccess: (data) => {
       // data from apiResponse: { code, message, data: { token, user } }

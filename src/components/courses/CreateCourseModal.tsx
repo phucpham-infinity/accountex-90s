@@ -1,50 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { useModal } from "@/hooks/useModal";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
+import { useCreateCourse } from "@/hooks/useCreateCourse";
+import { useUploadImage } from "@/hooks/useUploadImage";
+import { IMaskInput } from "react-imask";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
 
-interface CourseFormData {
-  title: string;
-  description: string;
-  price: number;
-  status: "draft" | "published" | "archived";
-  image: string;
-}
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 export default function CreateCourseModal() {
   const { isOpen, openModal, closeModal } = useModal();
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: async (newCourse: CourseFormData) => {
-      const response = await fetch("/api/courses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newCourse),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create course");
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      closeModal();
-      // Reload the page to show the newly created course, or invalidate query if it existed
-      window.location.reload();
-    },
-    onError: (error) => {
-      console.error(error);
-      alert("Error creating course");
-    },
+  const mutation = useCreateCourse(() => {
+    handleCloseModal();
   });
+
+  const uploadImageMutation = useUploadImage();
 
   const form = useForm({
     defaultValues: {
@@ -55,7 +35,15 @@ export default function CreateCourseModal() {
       image: "",
     },
     onSubmit: async ({ value }) => {
-      mutation.mutate(value);
+      if (imageFile) {
+        uploadImageMutation.mutate(imageFile, {
+          onSuccess: (url) => {
+            mutation.mutate({ ...value, image: url });
+          },
+        });
+      } else {
+        mutation.mutate(value);
+      }
     },
   });
 
@@ -65,11 +53,18 @@ export default function CreateCourseModal() {
     form.handleSubmit();
   };
 
+  const handleCloseModal = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    form.reset();
+    closeModal();
+  };
+
   return (
     <>
       <Button size="sm" onClick={openModal}>Add Course</Button>
 
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-xl p-6">
+      <Modal isOpen={isOpen} onClose={handleCloseModal} className="max-w-xl p-6">
         <div className="mb-5">
           <h3 className="text-xl font-bold text-gray-800 dark:text-white/90">
             Create New Course
@@ -105,15 +100,15 @@ export default function CreateCourseModal() {
             children={(field) => (
               <div>
                 <Label>Description</Label>
-                <textarea
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Enter course description"
-                  required
-                  className="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-24 w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-3 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                />
+                <div className="rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden shadow-theme-xs">
+                  <ReactQuill
+                    theme="snow"
+                    value={field.state.value}
+                    onChange={(content) => field.handleChange(content)}
+                    placeholder="Enter course description"
+                    className="bg-white dark:bg-gray-900 dark:text-white/90 [&_.ql-toolbar]:dark:border-gray-700 [&_.ql-container]:dark:border-gray-700 [&_.ql-editor]:min-h-[120px]"
+                  />
+                </div>
               </div>
             )}
           />
@@ -124,15 +119,22 @@ export default function CreateCourseModal() {
               children={(field) => (
                 <div>
                   <Label>Price</Label>
-                  <Input
-                    type="number"
+                  <IMaskInput
+                    mask={Number}
+                    scale={0}
+                    thousandsSeparator=","
+                    padFractionalZeros={false}
+                    normalizeZeros={true}
+                    unmask={true}
                     name={field.name}
-                    value={field.state.value}
+                    value={String(field.state.value || "")}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
-                    min="0"
+                    onAccept={(value, mask) => {
+                      field.handleChange(Number(mask.unmaskedValue) || 0);
+                    }}
                     placeholder="Enter price"
                     required
+                    className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800"
                   />
                 </div>
               )}
@@ -167,14 +169,40 @@ export default function CreateCourseModal() {
             name="image"
             children={(field) => (
               <div>
-                <Label>Image URL (optional)</Label>
-                <Input
+                <Label>Image (optional)</Label>
+                <input
+                  type="file"
+                  accept="image/*"
                   name={field.name}
-                  value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Enter image URL"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    } else {
+                      setImageFile(null);
+                      setImagePreview(null);
+                    }
+                  }}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-gray-800 dark:file:text-gray-300"
                 />
+                {(uploadImageMutation.isPending || mutation.isPending) && imageFile && (
+                  <p className="mt-2 text-sm text-brand-500">
+                    {uploadImageMutation.isPending
+                      ? "Uploading image..."
+                      : "Creating course..."}
+                  </p>
+                )}
+                {imagePreview && (
+                  <div className="mt-3">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="h-24 w-36 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                    />
+                  </div>
+                )}
               </div>
             )}
           />
@@ -184,7 +212,7 @@ export default function CreateCourseModal() {
               type="button"
               onClick={(e) => {
                 e.preventDefault();
-                closeModal();
+                handleCloseModal();
               }}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-3.5 text-sm font-medium text-gray-700 ring-1 ring-gray-300 transition ring-inset hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
             >
@@ -192,8 +220,8 @@ export default function CreateCourseModal() {
             </button>
             <button
               type="submit"
-              disabled={mutation.isPending}
-              className={`bg-brand-500 shadow-theme-xs hover:bg-brand-600 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3.5 text-sm font-medium text-white transition ${mutation.isPending ? "cursor-not-allowed opacity-50" : ""}`}
+              disabled={mutation.isPending || uploadImageMutation.isPending}
+              className={`bg-brand-500 shadow-theme-xs hover:bg-brand-600 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3.5 text-sm font-medium text-white transition ${(mutation.isPending || uploadImageMutation.isPending) ? "cursor-not-allowed opacity-50" : ""}`}
             >
               {mutation.isPending ? "Creating..." : "Create Course"}
             </button>
