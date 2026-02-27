@@ -14,16 +14,21 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
-  const { token, user } = useAuthStore();
+  const { token, user, hasHydrated } = useAuthStore();
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    if (!token || !user) {
-      router.push("/signin");
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && hasHydrated) {
+      if (!token || !user) {
+        router.push("/signin");
+      }
     }
-  }, [token, user, router]);
+  }, [token, user, router, isMounted, hasHydrated]);
 
   // Dynamic class for main content margin based on sidebar state
   const mainContentMargin = isMobileOpen
@@ -32,7 +37,7 @@ export default function AdminLayout({
       ? "lg:ml-[290px]"
       : "lg:ml-[90px]";
 
-  if (!isMounted || !token || !user) {
+  if (!isMounted || !hasHydrated || !token || !user) {
     return null;
   }
 
