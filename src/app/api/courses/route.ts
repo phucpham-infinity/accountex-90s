@@ -1,6 +1,8 @@
 import connectToDatabase from "@/lib/mongodb";
 import { apiResponse } from "@/lib/apiResponse";
 import { Course, CourseStatus } from "@/models/Course";
+import { withAuth } from "@/lib/withAuth";
+import { NextRequest } from "next/server";
 
 /**
  * @swagger
@@ -79,61 +81,54 @@ import { Course, CourseStatus } from "@/models/Course";
  */
 const ALLOWED_SORT_FIELDS = ["createdAt", "updatedAt", "title", "price"];
 
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-    const limit = Math.max(1, parseInt(searchParams.get("limit") || "10"));
-    const status = searchParams.get("status");
-    const search = searchParams.get("search")?.trim();
-    const sortBy = ALLOWED_SORT_FIELDS.includes(
-      searchParams.get("sortBy") || "",
-    )
-      ? (searchParams.get("sortBy") as string)
-      : "createdAt";
-    const sortOrder = searchParams.get("sortOrder") === "asc" ? 1 : -1;
+export const GET = withAuth(async (req: NextRequest, _: any, userId: string) => {
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+  const limit = Math.max(1, parseInt(searchParams.get("limit") || "10"));
+  const status = searchParams.get("status");
+  const search = searchParams.get("search")?.trim();
+  const sortBy = ALLOWED_SORT_FIELDS.includes(
+    searchParams.get("sortBy") || "",
+  )
+    ? (searchParams.get("sortBy") as string)
+    : "createdAt";
+  const sortOrder = searchParams.get("sortOrder") === "asc" ? 1 : -1;
 
-    const filter: Record<string, any> = {};
-    if (
-      status &&
-      Object.values(CourseStatus).includes(status as CourseStatus)
-    ) {
-      filter.status = status;
-    }
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    await connectToDatabase();
-
-    const skip = (page - 1) * limit;
-    const [courses, total] = await Promise.all([
-      Course.find(filter)
-        .sort({ [sortBy]: sortOrder })
-        .skip(skip)
-        .limit(limit),
-      Course.countDocuments(filter),
-    ]);
-
-    return apiResponse({
-      data: {
-        courses,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error: any) {
-    return apiResponse({
-      message: error.message || "Internal server error",
-      status: 500,
-    });
+  const filter: Record<string, any> = {};
+  if (
+    status &&
+    Object.values(CourseStatus).includes(status as CourseStatus)
+  ) {
+    filter.status = status;
   }
-}
+  if (search) {
+    filter.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  await connectToDatabase();
+
+  const skip = (page - 1) * limit;
+  const [courses, total] = await Promise.all([
+    Course.find(filter)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit),
+    Course.countDocuments(filter),
+  ]);
+
+  return apiResponse({
+    data: {
+      courses,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+});
 
 /**
  * @swagger
@@ -186,50 +181,43 @@ export async function GET(req: Request) {
  *       500:
  *         description: Internal server error
  */
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { title, description, image, price, status } = body;
+export const POST = withAuth(async (req: NextRequest, _: any, userId: string) => {
+  const body = await req.json();
+  const { title, description, image, price, status } = body;
 
-    if (!title || !description || price === undefined) {
-      return apiResponse({
-        message: "Missing required fields: title, description, price",
-        status: 400,
-      });
-    }
-
-    if (typeof price !== "number" || price < 0) {
-      return apiResponse({
-        message: "Price must be a non-negative number",
-        status: 400,
-      });
-    }
-
-    if (
-      status &&
-      !Object.values(CourseStatus).includes(status as CourseStatus)
-    ) {
-      return apiResponse({
-        message: `Invalid status. Must be one of: ${Object.values(CourseStatus).join(", ")}`,
-        status: 400,
-      });
-    }
-
-    await connectToDatabase();
-
-    const course = await Course.create({
-      title,
-      description,
-      image: image || "",
-      price,
-      status: status || CourseStatus.DRAFT,
-    });
-
-    return apiResponse({ data: course, message: "Created", status: 201 });
-  } catch (error: any) {
+  if (!title || !description || price === undefined) {
     return apiResponse({
-      message: error.message || "Internal server error",
-      status: 500,
+      message: "Missing required fields: title, description, price",
+      status: 400,
     });
   }
-}
+
+  if (typeof price !== "number" || price < 0) {
+    return apiResponse({
+      message: "Price must be a non-negative number",
+      status: 400,
+    });
+  }
+
+  if (
+    status &&
+    !Object.values(CourseStatus).includes(status as CourseStatus)
+  ) {
+    return apiResponse({
+      message: `Invalid status. Must be one of: ${Object.values(CourseStatus).join(", ")}`,
+      status: 400,
+    });
+  }
+
+  await connectToDatabase();
+
+  const course = await Course.create({
+    title,
+    description,
+    image: image || "",
+    price,
+    status: status || CourseStatus.DRAFT,
+  });
+
+  return apiResponse({ data: course, message: "Created", status: 201 });
+});

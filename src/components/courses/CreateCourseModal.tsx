@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -60,9 +59,15 @@ export default function CreateCourseModal() {
     },
   });
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    form.handleSubmit();
+  };
+
   return (
     <>
-      <Button onClick={openModal}>Add Course</Button>
+      <Button size="sm" onClick={openModal}>Add Course</Button>
 
       <Modal isOpen={isOpen} onClose={closeModal} className="max-w-xl p-6">
         <div className="mb-5">
@@ -75,11 +80,7 @@ export default function CreateCourseModal() {
         </div>
 
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-          }}
+          onSubmit={handleFormSubmit}
           className="space-y-4"
         >
           <form.Field

@@ -2,14 +2,28 @@ import connectToDatabase from "@/lib/mongodb";
 import { apiResponse } from "@/lib/apiResponse";
 import { Course, CourseStatus } from "@/models/Course";
 import mongoose from "mongoose";
+import { withAuth } from "@/lib/withAuth";
+import { NextRequest } from "next/server";
+import { z } from "zod";
 
 interface Params {
   params: Promise<{ id: string }>;
 }
 
-function isValidObjectId(id: string) {
-  return mongoose.Types.ObjectId.isValid(id);
-}
+// Zod schemas for validation
+const paramsSchema = z.object({
+  id: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
+    message: "Invalid course ID",
+  }),
+});
+
+const updateCourseSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  image: z.string().optional(),
+  price: z.number().min(0, "Price must be a non-negative number").optional(),
+  status: z.enum([CourseStatus.DRAFT, CourseStatus.PUBLISHED, CourseStatus.ARCHIVED]).optional(),
+});
 
 /**
  * @swagger
@@ -46,29 +60,25 @@ function isValidObjectId(id: string) {
  *       500:
  *         description: Internal server error
  */
-export async function GET(_req: Request, { params }: Params) {
-  try {
-    const { id } = await params;
+export const GET = withAuth(async (_req: NextRequest, { params }: Params, userId: string) => {
+  const awaitedParams = await params;
+  const parsedParams = paramsSchema.safeParse(awaitedParams);
 
-    if (!isValidObjectId(id)) {
-      return apiResponse({ message: "Invalid course ID", status: 400 });
-    }
-
-    await connectToDatabase();
-
-    const course = await Course.findById(id);
-    if (!course) {
-      return apiResponse({ message: "Course not found", status: 404 });
-    }
-
-    return apiResponse({ data: course });
-  } catch (error: any) {
-    return apiResponse({
-      message: error.message || "Internal server error",
-      status: 500,
-    });
+  if (!parsedParams.success) {
+    return apiResponse({ message: parsedParams.error.issues[0].message, status: 400 });
   }
-}
+
+  const { id } = parsedParams.data;
+
+  await connectToDatabase();
+
+  const course = await Course.findById(id);
+  if (!course) {
+    return apiResponse({ message: "Course not found", status: 404 });
+  }
+
+  return apiResponse({ data: course });
+});
 
 /**
  * @swagger
@@ -125,63 +135,44 @@ export async function GET(_req: Request, { params }: Params) {
  *       500:
  *         description: Internal server error
  */
-export async function PUT(req: Request, { params }: Params) {
-  try {
-    const { id } = await params;
+export const PUT = withAuth(async (req: NextRequest, { params }: Params, userId: string) => {
+  const awaitedParams = await params;
+  const parsedParams = paramsSchema.safeParse(awaitedParams);
 
-    if (!isValidObjectId(id)) {
-      return apiResponse({ message: "Invalid course ID", status: 400 });
-    }
+  if (!parsedParams.success) {
+    return apiResponse({ message: parsedParams.error.issues[0].message, status: 400 });
+  }
 
-    const body = await req.json();
-    const { title, description, image, price, status } = body;
+  const { id } = parsedParams.data;
 
-    if (price !== undefined && (typeof price !== "number" || price < 0)) {
-      return apiResponse({
-        message: "Price must be a non-negative number",
-        status: 400,
-      });
-    }
+  const body = await req.json();
+  const parsedBody = updateCourseSchema.safeParse(body);
 
-    if (
-      status &&
-      !Object.values(CourseStatus).includes(status as CourseStatus)
-    ) {
-      return apiResponse({
-        message: `Invalid status. Must be one of: ${Object.values(CourseStatus).join(", ")}`,
-        status: 400,
-      });
-    }
-
-    await connectToDatabase();
-
-    const updateData: Record<string, any> = {};
-    if (title !== undefined) updateData.title = title;
-    if (description !== undefined) updateData.description = description;
-    if (image !== undefined) updateData.image = image;
-    if (price !== undefined) updateData.price = price;
-    if (status !== undefined) updateData.status = status;
-
-    const course = await Course.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!course) {
-      return apiResponse({ message: "Course not found", status: 404 });
-    }
-
+  if (!parsedBody.success) {
     return apiResponse({
-      data: course,
-      message: "Course updated successfully",
-    });
-  } catch (error: any) {
-    return apiResponse({
-      message: error.message || "Internal server error",
-      status: 500,
+      message: parsedBody.error.issues[0].message,
+      status: 400,
     });
   }
-}
+
+  const updateData = parsedBody.data;
+
+  await connectToDatabase();
+
+  const course = await Course.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!course) {
+    return apiResponse({ message: "Course not found", status: 404 });
+  }
+
+  return apiResponse({
+    data: course,
+    message: "Course updated successfully",
+  });
+});
 
 /**
  * @swagger
@@ -208,26 +199,22 @@ export async function PUT(req: Request, { params }: Params) {
  *       500:
  *         description: Internal server error
  */
-export async function DELETE(_req: Request, { params }: Params) {
-  try {
-    const { id } = await params;
+export const DELETE = withAuth(async (_req: NextRequest, { params }: Params, userId: string) => {
+  const awaitedParams = await params;
+  const parsedParams = paramsSchema.safeParse(awaitedParams);
 
-    if (!isValidObjectId(id)) {
-      return apiResponse({ message: "Invalid course ID", status: 400 });
-    }
-
-    await connectToDatabase();
-
-    const course = await Course.findByIdAndDelete(id);
-    if (!course) {
-      return apiResponse({ message: "Course not found", status: 404 });
-    }
-
-    return apiResponse({ message: "Course deleted successfully" });
-  } catch (error: any) {
-    return apiResponse({
-      message: error.message || "Internal server error",
-      status: 500,
-    });
+  if (!parsedParams.success) {
+    return apiResponse({ message: parsedParams.error.issues[0].message, status: 400 });
   }
-}
+
+  const { id } = parsedParams.data;
+
+  await connectToDatabase();
+
+  const course = await Course.findByIdAndDelete(id);
+  if (!course) {
+    return apiResponse({ message: "Course not found", status: 404 });
+  }
+
+  return apiResponse({ message: "Course deleted successfully" });
+});

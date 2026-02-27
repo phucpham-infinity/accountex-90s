@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { apiResponse } from "@/lib/apiResponse";
+import { withAuth } from "@/lib/withAuth";
 
 /**
  * @swagger
@@ -40,29 +41,16 @@ import { apiResponse } from "@/lib/apiResponse";
  *       500:
  *         description: Internal server error
  */
-export async function GET(req: Request) {
-  try {
-    const userId = req.headers.get("x-user-id");
+export const GET = withAuth(async (req: NextRequest, _: any, userId: string) => {
+  await connectToDatabase();
 
-    if (!userId) {
-      return apiResponse({ message: "Unauthorized", status: 401 });
-    }
-
-    await connectToDatabase();
-
-    const user = await User.findById(userId).select("-password");
-    if (!user) {
-      return apiResponse({ message: "User not found", status: 404 });
-    }
-
-    return apiResponse({
-      data: { id: user._id, username: user.username, email: user.email },
-      status: 200,
-    });
-  } catch (error: any) {
-    return apiResponse({
-      message: error.message || "Internal server error",
-      status: 500,
-    });
+  const user = await User.findById(userId).select("-password");
+  if (!user) {
+    return apiResponse({ message: "User not found", status: 404 });
   }
-}
+
+  return apiResponse({
+    data: { id: user._id, username: user.username, email: user.email },
+    status: 200,
+  });
+});

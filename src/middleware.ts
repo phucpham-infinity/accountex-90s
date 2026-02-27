@@ -43,5 +43,5 @@ export async function middleware(request: NextRequest) {
 
 // Config paths that require authentication middleware
 export const config = {
-  matcher: ["/api/auth/me", "/api/protected/:path*"],
+  matcher: ["/api/auth/me", "/api/upload", "/api/courses/:path*", "/api/courses", "/api/protected/:path*"],
 };
