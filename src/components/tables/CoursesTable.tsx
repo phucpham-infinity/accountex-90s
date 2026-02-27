@@ -1,5 +1,7 @@
 "use client";
 
+import CreateCourseModal from "../courses/CreateCourseModal";
+
 import {
   ColumnDef,
   flexRender,
@@ -300,6 +302,7 @@ export default function CoursesTable() {
           >
             Filter
           </Button>
+          <CreateCourseModal />
         </div>
       </div>
 
