@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { agenda } from "@/lib/agenda";
 import { apiResponse } from "@/lib/apiResponse";
 import { withAuth } from "@/lib/withAuth";
+import { ObjectId } from "mongodb";
 
 /**
  * @swagger
@@ -117,13 +118,22 @@ export const GET = withAuth(async (req: NextRequest, props: any, userId: string)
 export const POST = withAuth(async (req: NextRequest, props: any, userId: string) => {
   try {
     const body = await req.json();
-    const { name, data } = body;
+    const { name, data, retryJobId } = body;
 
     if (!name) {
       return apiResponse({ message: "Thiếu tên job (name)", status: 400 });
     }
 
     const job = await agenda.now(name, data || {});
+
+    // If it's a retry action, clear the old failed job
+    if (retryJobId) {
+      try {
+        await agenda.cancel({ _id: new ObjectId(retryJobId) });
+      } catch (err) {
+        console.error("Failed to cancel old job during retry", err);
+      }
+    }
 
     return apiResponse({
       data: job,
@@ -166,17 +176,23 @@ export const POST = withAuth(async (req: NextRequest, props: any, userId: string
 export const DELETE = withAuth(async (req: NextRequest, props: any, userId: string) => {
   try {
     const { searchParams } = new URL(req.url);
+    const jobId = searchParams.get("id");
     const jobName = searchParams.get("name");
 
-    if (!jobName) {
-      return apiResponse({ message: "Thiếu tên job cần xoá", status: 400 });
+    let query: any = {};
+    if (jobId) {
+      query._id = new ObjectId(jobId);
+    } else if (jobName) {
+      query.name = jobName;
+    } else {
+      return apiResponse({ message: "Thiếu thông tin job cần xoá (id hoặc name)", status: 400 });
     }
 
-    const numRemoved = await agenda.cancel({ name: jobName });
+    const numRemoved = await agenda.cancel(query);
 
     return apiResponse({
       data: { numRemoved },
-      message: `Đã xóa thành công ${numRemoved} job(s) mang tên ${jobName}`,
+      message: `Đã xóa thành công ${numRemoved} job(s)`,
       status: 200,
     });
   } catch (error: any) {
