@@ -43,7 +43,7 @@ export default function LandingPage() {
                     Master Accounting with <span className="text-blue-600">Industry Experts</span>
                   </h1>
                   <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-xl">
-                    Advance your career with comprehensive courses in tax, auditing, and financial reporting designed for modern professionals.
+                    Advance your career with comprehensive courses in tax, auditing, and financial reporting designed for modern professionals 2026
                   </p>
                 </div>
                 {/* Search Bar */}
