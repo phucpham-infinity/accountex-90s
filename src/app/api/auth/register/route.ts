@@ -87,6 +87,14 @@ export async function POST(req: Request) {
       password: hashedPassword,
     });
 
+    // Đẩy luồng email gửi thông báo welcome tới queue
+    try {
+      const { agenda } = await import("@/lib/agenda");
+      await agenda.now("send-welcome-email", { email: newUser.email, username: newUser.username });
+    } catch (err) {
+      console.error("Lỗi push queue email welcome:", err);
+    }
+
     return apiResponse({
       data: {
         user: {

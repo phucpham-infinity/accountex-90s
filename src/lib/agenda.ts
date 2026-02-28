@@ -17,7 +17,7 @@ export const agenda = globalForAgenda.agenda || new Agenda({
     address: MONGODB_URI,
     collection: "agendaJobs",
   }),
-  processEvery: "1 minute",
+  processEvery: "5 seconds",
 });
 
 if (process.env.NODE_ENV !== "production") {
