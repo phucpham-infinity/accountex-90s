@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
 
-export interface QueueJob {
+export interface JobJob {
   _id: string;
   name: string;
   data: any;
@@ -16,14 +16,18 @@ export interface QueueJob {
   failReason?: string | null;
 }
 
-export interface QueuesResponse {
-  jobs: QueueJob[];
+export interface JobsResponse {
+  jobs: JobJob[];
   total: number;
 }
 
-export function useQueues(page: number = 1, limit: number = 10, searchName: string = "") {
-  return useQuery<QueuesResponse, Error>({
-    queryKey: ["queues", page, limit, searchName],
+export function useJobs(
+  page: number = 1,
+  limit: number = 10,
+  searchName: string = "",
+) {
+  return useQuery<JobsResponse, Error>({
+    queryKey: ["jobs", page, limit, searchName],
     queryFn: async () => {
       const skip = (page - 1) * limit;
       const params = new URLSearchParams({
@@ -33,12 +37,16 @@ export function useQueues(page: number = 1, limit: number = 10, searchName: stri
       if (searchName) {
         params.append("name", searchName);
       }
-      
+
       try {
-        const response = await axiosInstance.get(`/api/admin/queues?${params.toString()}`);
+        const response = await axiosInstance.get(
+          `/api/jobs?${params.toString()}`,
+        );
         return response.data.data;
       } catch (error: any) {
-        throw new Error(error.response?.data?.message || "Lỗi khi lấy thông tin hàng đợi");
+        throw new Error(
+          error.response?.data?.message || "Error retrieving job information",
+        );
       }
     },
   });

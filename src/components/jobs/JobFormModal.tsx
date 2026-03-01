@@ -1,10 +1,10 @@
-"use client8nm";
+"use client";
 
 import React, { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 
-interface QueueFormModalProps {
+interface JobFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -15,7 +15,7 @@ interface QueueFormModalProps {
   submitLabel: string;
 }
 
-export default function QueueFormModal({
+export default function JobFormModal({
   isOpen,
   onClose,
   title,
@@ -24,7 +24,7 @@ export default function QueueFormModal({
   onSubmit,
   isPending,
   submitLabel,
-}: QueueFormModalProps) {
+}: JobFormModalProps) {
   const [name, setName] = useState(defaultValues.name);
   const [dataStr, setDataStr] = useState(defaultValues.data);
   const [error, setError] = useState("");
@@ -71,45 +71,37 @@ export default function QueueFormModal({
       </div>
 
       <div className="space-y-4">
-        {error && (
-          <div className="text-sm text-error-500">
-            {error}
-          </div>
-        )}
+        {error && <div className="text-error-500 text-sm">{error}</div>}
 
         <div>
-          <label className="mb-2 pl-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Queue Name
+          <label className="mb-2 block pl-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Job Name
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            className="focus:border-brand-500 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
             placeholder="e.g. process-email"
             required
           />
         </div>
 
         <div>
-          <label className="mb-2 pl-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Queue Data (JSON format)
+          <label className="mb-2 block pl-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Job Data (JSON format)
           </label>
           <textarea
             value={dataStr}
             onChange={(e) => setDataStr(e.target.value)}
             rows={5}
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            className="focus:border-brand-500 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
             placeholder='{"key": "value"}'
           />
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isPending}
-          >
+        <div className="flex items-center justify-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-800">
+          <Button variant="outline" onClick={onClose} disabled={isPending}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isPending}>

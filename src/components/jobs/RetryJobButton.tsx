@@ -1,25 +1,25 @@
 "use client";
 
 import { useModal } from "@/hooks/useModal";
-import { useRetryQueue } from "@/hooks/useRetryQueue";
-import { QueueJob } from "@/hooks/useQueues";
+import { useRetryJob } from "@/hooks/useRetryJob";
+import { JobJob } from "@/hooks/useJobs";
 import { Modal } from "@/components/ui/modal";
 
-interface RetryQueueModalProps {
-  queueJob: QueueJob;
+interface RetryJobModalProps {
+  jobJob: JobJob;
 }
 
-export default function RetryQueueButton({ queueJob }: RetryQueueModalProps) {
+export default function RetryJobButton({ jobJob }: RetryJobModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
-  const mutation = useRetryQueue(() => {
+  const mutation = useRetryJob(() => {
     closeModal();
   });
 
   const handleRetry = () => {
     mutation.mutate({ 
-      name: queueJob.name, 
-      data: queueJob.data, 
-      retryJobId: queueJob._id 
+      name: jobJob.name, 
+      data: jobJob.data, 
+      retryJobId: jobJob._id 
     });
   };
 
@@ -71,16 +71,16 @@ export default function RetryQueueButton({ queueJob }: RetryQueueModalProps) {
           <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50 my-4 text-sm">
             <p className="font-semibold text-gray-700 dark:text-gray-300">Fail Reason:</p>
             <p className="text-gray-600 dark:text-gray-400 mt-1 break-words">
-              {queueJob.failReason || "Unknown Error"}
+              {jobJob.failReason || "Unknown Error"}
             </p>
-            {queueJob.failedAt && (
+            {jobJob.failedAt && (
               <p className="text-gray-500 dark:text-gray-500 text-xs mt-3">
-                Failed At: {new Date(queueJob.failedAt).toLocaleString()}
+                Failed At: {new Date(jobJob.failedAt).toLocaleString()}
               </p>
             )}
           </div>
           <p className="text-sm text-center text-gray-500 dark:text-gray-400">
-            Are you sure you want to retry this job? It will be enqueued immediately.
+            Are you sure you want to retry this job? It will be enjobd immediately.
           </p>
         </div>
 

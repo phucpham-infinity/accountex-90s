@@ -1,23 +1,23 @@
 "use client";
 
 import { useModal } from "@/hooks/useModal";
-import { useDeleteQueue } from "@/hooks/useDeleteQueue";
-import { QueueJob } from "@/hooks/useQueues";
+import { useDeleteJob } from "@/hooks/useDeleteJob";
+import { JobJob } from "@/hooks/useJobs";
 import { Modal } from "@/components/ui/modal";
 
-interface DeleteQueueModalProps {
-  queueJob: QueueJob;
+interface DeleteJobModalProps {
+  jobJob: JobJob;
 }
 
-export default function DeleteQueueModal({ queueJob }: DeleteQueueModalProps) {
+export default function DeleteJobModal({ jobJob }: DeleteJobModalProps) {
   const { isOpen, openModal, closeModal } = useModal();
 
-  const mutation = useDeleteQueue(() => {
+  const mutation = useDeleteJob(() => {
     closeModal();
   });
 
   const handleDelete = () => {
-    mutation.mutate(queueJob._id);
+    mutation.mutate(jobJob._id);
   };
 
   return (
@@ -25,7 +25,7 @@ export default function DeleteQueueModal({ queueJob }: DeleteQueueModalProps) {
       <button
         onClick={openModal}
         className="text-gray-500 hover:text-error-500 dark:text-gray-400 dark:hover:text-error-500 transition-colors"
-        title="Delete Queue Job"
+        title="Delete Job Job"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -65,10 +65,10 @@ export default function DeleteQueueModal({ queueJob }: DeleteQueueModalProps) {
             </svg>
           </div>
           <h3 className="mb-2 text-xl font-bold text-gray-800 dark:text-white/90">
-            Delete Queue Job
+            Delete Job Job
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Are you sure you want to delete this job (<strong>{queueJob.name}</strong>)? This action cannot be undone.
+            Are you sure you want to delete this job (<strong>{jobJob.name}</strong>)? This action cannot be undone.
           </p>
         </div>
 

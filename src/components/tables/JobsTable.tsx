@@ -1,7 +1,7 @@
 "use client";
 
-import RetryQueueButton from "../queues/RetryQueueButton";
-import DeleteQueueModal from "../queues/DeleteQueueModal";
+import RetryJobButton from "../jobs/RetryJobButton";
+import DeleteJobModal from "../jobs/DeleteJobModal";
 
 import {
   ColumnDef,
@@ -20,10 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { useQueues, QueueJob } from "@/hooks/useQueues";
+import { useJobs, JobJob } from "@/hooks/useJobs";
 import Pagination from "./Pagination";
 
-export default function QueuesTable() {
+export default function JobsTable() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [debouncedFilter, setDebouncedFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -37,19 +37,19 @@ export default function QueuesTable() {
     return () => clearTimeout(handler);
   }, [globalFilter]);
 
-  const { data, isLoading, isError, error } = useQueues(page, limit, debouncedFilter);
+  const { data, isLoading, isError, error } = useJobs(page, limit, debouncedFilter);
 
   useEffect(() => {
     if (isError && error) {
-      toast.error(error.message || "Failed to fetch queues");
+      toast.error(error.message || "Failed to fetch jobs");
     }
   }, [isError, error]);
 
-  const queuesData = data?.jobs || [];
+  const jobsData = data?.jobs || [];
   const total = data?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
-  const columns = useMemo<ColumnDef<QueueJob>[]>(
+  const columns = useMemo<ColumnDef<JobJob>[]>(
     () => [
       {
         id: "name",
@@ -103,7 +103,7 @@ export default function QueuesTable() {
                status = "scheduled";
                color = "info";
             } else {
-               status = "queued";
+               status = "jobd";
                color = "warning";
             }
           }
@@ -123,8 +123,8 @@ export default function QueuesTable() {
 
           return (
             <div className="flex items-center gap-2">
-              {!isFailed && <DeleteQueueModal queueJob={row.original} />}
-              {isFailed && <RetryQueueButton queueJob={row.original} />}
+              {!isFailed && <DeleteJobModal jobJob={row.original} />}
+              {isFailed && <RetryJobButton jobJob={row.original} />}
             </div>
           );
         },
@@ -134,7 +134,7 @@ export default function QueuesTable() {
   );
 
   const table = useReactTable({
-    data: queuesData,
+    data: jobsData,
     columns,
     state: {},
     getCoreRowModel: getCoreRowModel(),
@@ -145,7 +145,7 @@ export default function QueuesTable() {
       {/* Card Header */}
       <div className="flex items-center justify-between px-5 py-4">
         <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-          Queues
+          Jobs
         </h3>
         <div className="flex items-center gap-3">
           {/* Search Input */}
@@ -176,7 +176,7 @@ export default function QueuesTable() {
               type="text"
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
-              placeholder="Search queues..."
+              placeholder="Search jobs..."
               className="focus:border-brand-500 h-10 w-64 rounded-lg border border-gray-200 bg-white pr-4 pl-9 text-sm text-gray-700 placeholder-gray-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:placeholder-gray-500"
             />
           </div>
@@ -212,19 +212,19 @@ export default function QueuesTable() {
               {isLoading ? (
                 <TableRow>
                   <td colSpan={columns.length} className="px-5 py-8 text-center text-gray-500">
-                    Loading queues...
+                    Loading jobs...
                   </td>
                 </TableRow>
               ) : isError ? (
                 <TableRow>
                   <td colSpan={columns.length} className="px-5 py-8 text-center text-error-500">
-                    Failed to fetch queues.
+                    Failed to fetch jobs.
                   </td>
                 </TableRow>
-              ) : queuesData.length === 0 ? (
+              ) : jobsData.length === 0 ? (
                 <TableRow>
                   <td colSpan={columns.length} className="px-5 py-8 text-center text-gray-500">
-                    No queues found.
+                    No jobs found.
                   </td>
                 </TableRow>
               ) : (
